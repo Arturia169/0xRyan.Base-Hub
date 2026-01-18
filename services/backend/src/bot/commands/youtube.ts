@@ -15,28 +15,65 @@ const log = logger.child('Bot:YouTube');
 
 /**
  * 添加 YouTube 频道
- * 格式: /addyt <channel_id> [可选名称]
+ * 格式: /addyt <channel_id 或 @handle> [可选名称]
  */
 export async function addYoutube(ctx: Context) {
     const text = ctx.message?.text || '';
     const args = text.split(' ').slice(1);
 
     if (args.length < 1) {
-        await ctx.reply('⚠️ 使用方法: `/addyt <channel_id> [自定义名称]`\n\n例如: `/addyt UCxxxxxx 某个频道`', { parse_mode: 'Markdown' });
+        await ctx.reply('⚠️ 使用方法: `/addyt <频道ID或@用户名> [自定义名称]`\n\n例如: `/addyt UCxxxxxx 某个频道` 或 `/addyt @username 某人`', { parse_mode: 'Markdown' });
         return;
     }
 
-    const channelId = args[0];
-    const name = args.slice(1).join(' ') || channelId;
+    let channelInput = args[0];
+    const name = args.slice(1).join(' ');
     const userId = ctx.from!.id;
 
     try {
-        addYoutubeChannel(userId, channelId, name);
-        await ctx.reply(`✅ 成功订阅 YouTube 频道: <b>${name}</b>\nID: <code>${channelId}</code>`, { parse_mode: 'HTML' });
+        // 如果输入的是 @handle 格式，需要转换成真实的频道 ID
+        let channelId = channelInput;
+        let channelName = name || channelInput;
+
+        if (channelInput.startsWith('@')) {
+            await ctx.reply('🔍 检测到 Handle 格式，正在获取真实频道 ID...');
+
+            try {
+                const axios = (await import('axios')).default;
+                const handle = channelInput.replace('@', '');
+                const url = `https://www.youtube.com/@${handle}`;
+
+                const response = await axios.get(url, {
+                    headers: {
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                    }
+                });
+
+                // 从页面源代码中提取 channelId
+                const match = response.data.match(/"channelId":"(UC[^"]+)"/);
+                if (match && match[1]) {
+                    channelId = match[1];
+                    // 如果没有自定义名称，尝试提取频道标题
+                    if (!name) {
+                        const titleMatch = response.data.match(/<title>([^<]+)<\/title>/);
+                        if (titleMatch && titleMatch[1]) {
+                            channelName = titleMatch[1].replace(' - YouTube', '').trim();
+                        }
+                    }
+                    await ctx.reply(`✅ 已找到频道 ID: <code>${channelId}</code>`, { parse_mode: 'HTML' });
+                } else {
+                    throw new Error('无法从页面中提取频道 ID，请确认用户名是否正确');
+                }
+            } catch (error: any) {
+                await ctx.reply(`❌ Handle 转换失败: ${error.message}\n\n💡 提示：您也可以直接使用频道 ID (UCxxxxxx 格式)`);
+                return;
+            }
+        }
+
+        addYoutubeChannel(userId, channelId, channelName);
+        await ctx.reply(`✅ 成功订阅 YouTube 频道: <b>${channelName}</b>\nID: <code>${channelId}</code>`, { parse_mode: 'HTML' });
         log.info(`用户 ${userId} 添加 YouTube 订阅: ${channelId}`);
 
-        // 触发一次扫描
-        // youtubeService.triggerScan(); // 暂时没有 public trigger 方法，依赖自动轮询即可
     } catch (error: any) {
         await ctx.reply(`❌ 添加失败: ${error.message}`);
     }
