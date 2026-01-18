@@ -52,70 +52,16 @@ export function initDatabase(): void {
       )
     `);
 
-    // 创建钱包表
+    // 创建用户表
     db.exec(`
-      CREATE TABLE IF NOT EXISTS wallets (
+      CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY,
-        user_id INTEGER NOT NULL,
-        chain TEXT NOT NULL,
-        address TEXT NOT NULL,
-        label TEXT,
+        telegram_id INTEGER UNIQUE NOT NULL,
+        username TEXT,
+        first_name TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-        UNIQUE(user_id, chain, address)
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
-    `);
-
-    // 创建告警表
-    db.exec(`
-      CREATE TABLE IF NOT EXISTS alerts (
-        id INTEGER PRIMARY KEY,
-        wallet_id INTEGER NOT NULL,
-        token_symbol TEXT NOT NULL,
-        threshold REAL NOT NULL,
-        alert_type TEXT NOT NULL DEFAULT 'below',
-        enabled INTEGER DEFAULT 1,
-        last_triggered_at DATETIME,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (wallet_id) REFERENCES wallets(id) ON DELETE CASCADE
-      )
-    `);
-
-    // 创建余额快照表（用于检测变化）
-    db.exec(`
-      CREATE TABLE IF NOT EXISTS balance_snapshots (
-        id INTEGER PRIMARY KEY,
-        wallet_id INTEGER NOT NULL,
-        token_symbol TEXT NOT NULL,
-        balance TEXT NOT NULL,
-        balance_usd REAL,
-        recorded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (wallet_id) REFERENCES wallets(id) ON DELETE CASCADE
-      )
-    `);
-
-    // 创建自定义代币表
-    db.exec(`
-      CREATE TABLE IF NOT EXISTS custom_tokens (
-        id INTEGER PRIMARY KEY,
-        chain TEXT NOT NULL,
-        symbol TEXT NOT NULL,
-        name TEXT,
-        address TEXT NOT NULL,
-        decimals INTEGER NOT NULL,
-        coingecko_id TEXT,
-        created_by INTEGER,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE(chain, address),
-        UNIQUE(chain, symbol)
-      )
-    `);
-
-    // 创建索引
-    db.exec(`
-      CREATE INDEX IF NOT EXISTS idx_wallets_user ON wallets(user_id);
-      CREATE INDEX IF NOT EXISTS idx_alerts_wallet ON alerts(wallet_id);
-      CREATE INDEX IF NOT EXISTS idx_snapshots_wallet ON balance_snapshots(wallet_id, recorded_at);
     `);
 
     // 创建 Bilibili 主播表

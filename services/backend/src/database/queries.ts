@@ -6,15 +6,11 @@
 import { getDatabase } from './index.js';
 import type {
   User,
-  Wallet,
-  Alert,
-  BalanceSnapshot,
-  CreateWalletParams,
-  CreateAlertParams,
   BilibiliStreamer,
   RssFeed,
+  YoutubeChannel,
+  TwitterUser
 } from './models.js';
-import type { ChainType } from '../config/index.js';
 
 // ==================== 用户相关操作 ====================
 
@@ -60,328 +56,12 @@ export function getUserByTelegramId(telegramId: number): User | undefined {
   return db.prepare('SELECT * FROM users WHERE telegram_id = ?').get(telegramId) as User | undefined;
 }
 
-// ==================== 钱包相关操作 ====================
-
-/**
- * 添加监控钱包
- */
-export function addWallet(params: CreateWalletParams): Wallet {
-  const db = getDatabase();
-
-  try {
-    const result = db.prepare(`
-      INSERT INTO wallets (user_id, chain, address, label)
-      VALUES (?, ?, ?, ?)
-    `).run(params.userId, params.chain, params.address, params.label || null);
-
-    return db.prepare('SELECT * FROM wallets WHERE id = ?').get(result.lastInsertRowid) as Wallet;
-  } catch (error: any) {
-    if (error.code === 'SQLITE_CONSTRAINT_UNIQUE') {
-      throw new Error('该钱包地址已在监控列表中');
-    }
-    throw error;
-  }
-}
-
-/**
- * 移除监控钱包
- */
-export function removeWallet(userId: number, address: string, chain: ChainType): boolean {
-  const db = getDatabase();
-
-  // 根据链类型进行规范化匹配
-  const searchAddress = chain === 'arbitrum' ? address.toLowerCase() : address;
-
-  const result = db.prepare(`
-    DELETE FROM wallets WHERE user_id = ? AND address = ? AND chain = ?
-  `).run(userId, searchAddress, chain);
-
-  return result.changes > 0;
-}
-
-/**
- * 获取用户的所有钱包
- */
-export function getWalletsByUser(userId: number): Wallet[] {
-  const db = getDatabase();
-  return db.prepare('SELECT * FROM wallets WHERE user_id = ? ORDER BY created_at DESC').all(userId) as Wallet[];
-}
-
-/**
- * 根据地址获取钱包
- */
-export function getWalletByAddress(userId: number, address: string, chain?: ChainType): Wallet | undefined {
-  const db = getDatabase();
-
-  if (chain) {
-    const searchAddress = chain === 'arbitrum' ? address.toLowerCase() : address;
-    return db.prepare(`
-            SELECT * FROM wallets WHERE user_id = ? AND address = ? AND chain = ?
-        `).get(userId, searchAddress, chain) as Wallet | undefined;
-  }
-
-  // 如果未指定链，由于 Tron 大小写敏感，
-  // 我们先尝试精确匹配，如果找不到且看起来像以太坊地址，再尝试不区分大小写匹配（针对 Arbitrum）
-
-  // 1. 精确匹配
-  let wallet = db.prepare(`
-        SELECT * FROM wallets WHERE user_id = ? AND address = ?
-    `).get(userId, address) as Wallet | undefined;
-
-  if (wallet) return wallet;
-
-  // 2. 如果地址以 0x 开头，尝试不区分大小写匹配（Arbitrum）
-  if (address.startsWith('0x')) {
-    return db.prepare(`
-            SELECT * FROM wallets WHERE user_id = ? AND LOWER(address) = LOWER(?) AND chain = 'arbitrum'
-        `).get(userId, address) as Wallet | undefined;
-  }
-
-  return undefined;
-}
-
 /**
  * 获取所有用户
  */
 export function getAllUsers(): User[] {
   const db = getDatabase();
   return db.prepare('SELECT * FROM users').all() as User[];
-}
-
-/**
- * 获取所有需要监控的钱包
- */
-export function getAllWallets(): (Wallet & { telegram_id: number })[] {
-  const db = getDatabase();
-  return db.prepare(`
-    SELECT w.*, u.telegram_id
-    FROM wallets w
-    JOIN users u ON w.user_id = u.id
-  `).all() as (Wallet & { telegram_id: number })[];
-}
-
-/**
- * 获取指定链的所有钱包
- */
-export function getWalletsByChain(chain: ChainType): (Wallet & { telegram_id: number })[] {
-  const db = getDatabase();
-  return db.prepare(`
-    SELECT w.*, u.telegram_id
-    FROM wallets w
-    JOIN users u ON w.user_id = u.id
-    WHERE w.chain = ?
-  `).all(chain) as (Wallet & { telegram_id: number })[];
-}
-
-/**
- * 更新钱包标签
- */
-export function updateWalletLabel(walletId: number, label: string): boolean {
-  const db = getDatabase();
-  const result = db.prepare('UPDATE wallets SET label = ? WHERE id = ?').run(label, walletId);
-  return result.changes > 0;
-}
-
-// ==================== 告警相关操作 ====================
-
-/**
- * 创建告警
- */
-export function createAlert(params: CreateAlertParams): Alert {
-  const db = getDatabase();
-
-  const result = db.prepare(`
-    INSERT INTO alerts (wallet_id, token_symbol, threshold, alert_type)
-    VALUES (?, ?, ?, ?)
-  `).run(
-    params.walletId,
-    params.tokenSymbol.toUpperCase(),
-    params.threshold,
-    params.alertType || 'below'
-  );
-
-  return db.prepare('SELECT * FROM alerts WHERE id = ?').get(result.lastInsertRowid) as Alert;
-}
-
-/**
- * 删除告警
- */
-export function deleteAlert(alertId: number): boolean {
-  const db = getDatabase();
-  const result = db.prepare('DELETE FROM alerts WHERE id = ?').run(alertId);
-  return result.changes > 0;
-}
-
-/**
- * 获取钱包的所有告警
- */
-export function getAlertsByWallet(walletId: number): Alert[] {
-  const db = getDatabase();
-  return db.prepare('SELECT * FROM alerts WHERE wallet_id = ? AND enabled = 1').all(walletId) as Alert[];
-}
-
-/**
- * 获取所有启用的告警
- */
-export function getAllEnabledAlerts(): (Alert & { chain: ChainType; address: string; telegram_id: number })[] {
-  const db = getDatabase();
-  return db.prepare(`
-    SELECT a.*, w.chain, w.address, u.telegram_id
-    FROM alerts a
-    JOIN wallets w ON a.wallet_id = w.id
-    JOIN users u ON w.user_id = u.id
-    WHERE a.enabled = 1
-  `).all() as (Alert & { chain: ChainType; address: string; telegram_id: number })[];
-}
-
-/**
- * 更新告警触发时间
- */
-export function updateAlertTriggeredTime(alertId: number): void {
-  const db = getDatabase();
-  db.prepare('UPDATE alerts SET last_triggered_at = CURRENT_TIMESTAMP WHERE id = ?').run(alertId);
-}
-
-/**
- * 切换告警启用状态
- */
-export function toggleAlert(alertId: number, enabled: boolean): boolean {
-  const db = getDatabase();
-  const result = db.prepare('UPDATE alerts SET enabled = ? WHERE id = ?').run(enabled ? 1 : 0, alertId);
-  return result.changes > 0;
-}
-
-// ==================== 余额快照相关操作 ====================
-
-/**
- * 保存余额快照
- */
-export function saveBalanceSnapshot(
-  walletId: number,
-  tokenSymbol: string,
-  balance: string,
-  balanceUsd?: number
-): void {
-  const db = getDatabase();
-  db.prepare(`
-    INSERT INTO balance_snapshots (wallet_id, token_symbol, balance, balance_usd)
-    VALUES (?, ?, ?, ?)
-  `).run(walletId, tokenSymbol.toUpperCase(), balance, balanceUsd || null);
-}
-
-/**
- * 获取最新的余额快照
- */
-export function getLatestSnapshot(
-  walletId: number,
-  tokenSymbol: string
-): BalanceSnapshot | undefined {
-  const db = getDatabase();
-  return db.prepare(`
-    SELECT * FROM balance_snapshots
-    WHERE wallet_id = ? AND token_symbol = ?
-    ORDER BY recorded_at DESC
-    LIMIT 1
-  `).get(walletId, tokenSymbol.toUpperCase()) as BalanceSnapshot | undefined;
-}
-
-/**
- * 清理旧的余额快照（保留最近24小时）
- */
-export function cleanOldSnapshots(): number {
-  const db = getDatabase();
-  const result = db.prepare(`
-    DELETE FROM balance_snapshots
-    WHERE recorded_at < datetime('now', '-24 hours')
-  `).run();
-  return result.changes;
-}
-
-// ==================== 统计相关操作 ====================
-
-/**
- * 获取用户统计信息
- */
-export function getUserStats(userId: number): {
-  walletCount: number;
-  alertCount: number;
-  chains: string[];
-} {
-  const db = getDatabase();
-
-  const walletCount = (db.prepare(`
-    SELECT COUNT(*) as count FROM wallets WHERE user_id = ?
-  `).get(userId) as { count: number }).count;
-
-  const alertCount = (db.prepare(`
-    SELECT COUNT(*) as count FROM alerts a
-    JOIN wallets w ON a.wallet_id = w.id
-    WHERE w.user_id = ? AND a.enabled = 1
-  `).get(userId) as { count: number }).count;
-
-  const chains = (db.prepare(`
-    SELECT DISTINCT chain FROM wallets WHERE user_id = ?
-  `).all(userId) as { chain: string }[]).map(r => r.chain);
-
-  return { walletCount, alertCount, chains };
-}
-
-// ==================== 自定义代币操作 ====================
-
-export interface CustomToken {
-  id: number;
-  chain: string;
-  symbol: string;
-  name?: string;
-  address: string;
-  decimals: number;
-  coingecko_id?: string;
-  created_at: string;
-}
-
-/**
- * 添加自定义代币
- */
-export function addCustomToken(params: Omit<CustomToken, 'id' | 'created_at'>): CustomToken {
-  const db = getDatabase();
-  const result = db.prepare(`
-    INSERT INTO custom_tokens (chain, symbol, name, address, decimals, coingecko_id)
-    VALUES (?, ?, ?, ?, ?, ?)
-  `).run(
-    params.chain,
-    params.symbol.toUpperCase(),
-    params.name || null,
-    params.address,
-    params.decimals,
-    params.coingecko_id || null
-  );
-
-  return db.prepare('SELECT * FROM custom_tokens WHERE id = ?').get(result.lastInsertRowid) as CustomToken;
-}
-
-/**
- * 获取所有自定义代币
- */
-export function getCustomTokens(): CustomToken[] {
-  const db = getDatabase();
-  return db.prepare('SELECT * FROM custom_tokens').all() as CustomToken[];
-}
-
-/**
- * 根据链获取自定义代币
- */
-export function getCustomTokensByChain(chain: string): CustomToken[] {
-  const db = getDatabase();
-  return db.prepare('SELECT * FROM custom_tokens WHERE chain = ?').all(chain) as CustomToken[];
-}
-
-/**
- * 移除自定义代币
- */
-export function removeCustomToken(chain: string, symbol: string): boolean {
-  const db = getDatabase();
-  const result = db.prepare('DELETE FROM custom_tokens WHERE chain = ? AND symbol = ? COLLATE NOCASE').run(chain, symbol);
-  return result.changes > 0;
 }
 
 // ==================== Bilibili 主播操作 ====================
@@ -463,8 +143,6 @@ export function updateBilibiliStreamerStatus(
 
 // ==================== YouTube 频道操作 ====================
 
-import type { YoutubeChannel } from './models.js';
-
 /**
  * 添加 YouTube 订阅
  */
@@ -526,8 +204,6 @@ export function updateYoutubeChannelStatus(
 }
 
 // ==================== Twitter 用户操作 ====================
-
-import type { TwitterUser } from './models.js';
 
 /**
  * 添加 Twitter 订阅

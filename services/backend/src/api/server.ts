@@ -148,21 +148,13 @@ export async function startServer() {
         // 数据库调试端点
         app.get('/api/debug-db', async (request: any, reply: any) => {
             try {
-                const { getAllUsers, getAllWallets } = await import('../database/queries.js');
+                const { getAllUsers } = await import('../database/queries.js');
 
                 const users = getAllUsers();
-                const wallets = getAllWallets();
 
                 return {
                     debug: true,
                     users: users,
-                    wallets: wallets.map(w => ({
-                        id: w.id,
-                        user_id: w.user_id,
-                        chain: w.chain,
-                        address: w.address.substring(0, 10) + '...',
-                        label: w.label
-                    })),
                     timestamp: new Date().toISOString()
                 };
             } catch (error: any) {
