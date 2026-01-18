@@ -1,10 +1,10 @@
 {
     "compilerOptions": {
-        "target": "ESNext",
+        "target": "ES2022",
         "module": "NodeNext",
         "moduleResolution": "NodeNext",
         "lib": [
-            "ESNext",
+            "ES2022",
             "DOM",
             "DOM.Iterable"
         ],
@@ -15,7 +15,9 @@
         "skipLibCheck": true,
         "forceConsistentCasingInFileNames": true,
         "resolveJsonModule": true,
-        "types": [],
+        "types": [
+            "node"
+        ],
         "declaration": true,
         "declarationMap": true,
         "sourceMap": true

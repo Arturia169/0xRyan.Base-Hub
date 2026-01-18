@@ -19,18 +19,20 @@ composer.command('start', async (ctx: Context) => {
   const welcomeMessage = `
 🤖 <b>欢迎来到赛博基地情报中心！</b>
 
-我是你的情报助手，负责实时监控并汇总来自 B站、YouTube 及社媒的关键动态。
+我是你的全源情报助手，实时监控 B站、YouTube、Twitter 等平台的关键动态。
 
-<b>📺 当前支持：</b>
-• <b>Bilibili</b> - 主播开播提醒 / 动态同步
-• <b>GitHub</b> - 活动热力图展示 (Mini App)
-• <b>系统监控</b> - 实时 Docker 容器健康状态
+<b>📺 支持平台：</b>
+• <b>Bilibili</b> - 主播开播提醒
+• <b>YouTube</b> - 频道新视频推送
+• <b>Twitter/X</b> - 用户推文监控
+• <b>GitHub</b> - 活动热力图 (Mini App)
+• <b>系统监控</b> - Docker 容器状态
 
-<b>🛠️ 常用命令：</b>
-/addbili - 添加 B站 监控房间
-/listbili - 查看我的监控列表
-/removebili - 移除监控房间
-/help - 详尽说明
+<b>🛠️ 快速开始：</b>
+/addbili - 添加 B站 直播监控
+/addyt - 添加 YouTube 频道
+/addtw - 添加 Twitter 用户
+/help - 查看完整命令列表
 
 点击下方按钮进入<b>控制面板</b>查看实时看板。
   `;
@@ -54,6 +56,26 @@ composer.command('help', async (ctx: Context) => {
   
 /removebili &lt;房间号&gt;
   取消对指定房间的监控
+
+<b>🎬 YouTube 频道监控：</b>
+/addyt &lt;频道ID&gt; [自定义名称]
+  例: /addyt UCxxxxxx 某某频道
+  
+/listyt
+  查看已订阅的 YouTube 频道
+  
+/removeyt &lt;频道ID&gt;
+  取消订阅指定频道
+
+<b>🐦 Twitter/X 用户监控：</b>
+/addtw &lt;用户名&gt; [自定义名称]
+  例: /addtw @elonmusk 马斯克
+  
+/listtw
+  查看已订阅的 Twitter 用户
+  
+/removetw &lt;用户名&gt;
+  取消订阅指定用户
 
 <b>💎 赛博控制面板：</b>
 点击 [💎 赛博控制面板] 按钮即可在 Telegram 内直接打开 Web App 看板。

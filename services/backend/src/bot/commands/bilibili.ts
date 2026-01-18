@@ -4,8 +4,8 @@
 
 import type { Context } from 'grammy';
 import { logger } from '../../utils/logger.js';
-import { getOrCreateUser } from '../../database/queries.js';
 import {
+    getOrCreateUser,
     addBilibiliStreamer,
     removeBilibiliStreamer,
     getBilibiliStreamersByUser

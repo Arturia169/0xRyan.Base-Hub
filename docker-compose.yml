@@ -27,13 +27,15 @@ services:
     container_name: cyber-backend
     privileged: true
     user: root
+    network_mode: host
     env_file:
       - .env
     volumes:
       - ./data/backend:/app/data
       - /var/run/docker.sock:/var/run/docker.sock
-    networks:
-      - cyber-backbone
+    environment:
+      - HTTPS_PROXY=http://127.0.0.1:7890
+      - HTTP_PROXY=http://127.0.0.1:7890
     restart: unless-stopped
 
   # 4. Cloudflare Tunnel - 提供外部 HTTPS 访问
@@ -44,9 +46,15 @@ services:
     # 移除 host 模式，将其加入内网桥接网络，以便能解析 'gateway' 域名
     networks:
       - cyber-backbone
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
     environment:
       - TUNNEL_TOKEN=${CF_TUNNEL_TOKEN}
       - TUNNEL_HTTP_PROXY=http://192.168.5.100:7890
+      - HTTPS_PROXY=http://192.168.5.100:7890
+      - NO_PROXY=gateway,cyber-gateway,frontend,backend,localhost,127.0.0.1
+      - no_proxy=gateway,cyber-gateway,frontend,backend,localhost,127.0.0.1
       - TUNNEL_TRANSPORT_PROTOCOL=http2
     command: tunnel --no-autoupdate run --protocol http2
 
