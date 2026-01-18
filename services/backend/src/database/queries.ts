@@ -106,18 +106,24 @@ export function addBilibiliStreamer(
 /**
  * 移除监控主播
  */
-export function removeBilibiliStreamer(userId: number, roomId: string): boolean {
+export function removeBilibiliStreamer(telegramId: number, roomId: string): boolean {
   const db = getDatabase();
-  const result = db.prepare('DELETE FROM bilibili_streamers WHERE user_id = ? AND room_id = ?').run(userId, roomId);
+  const user = db.prepare('SELECT id FROM users WHERE telegram_id = ?').get(telegramId) as { id: number } | undefined;
+  if (!user) return false;
+
+  const result = db.prepare('DELETE FROM bilibili_streamers WHERE user_id = ? AND room_id = ?').run(user.id, roomId);
   return result.changes > 0;
 }
 
 /**
  * 获取用户监控的所有主播
  */
-export function getBilibiliStreamersByUser(userId: number): BilibiliStreamer[] {
+export function getBilibiliStreamersByUser(telegramId: number): BilibiliStreamer[] {
   const db = getDatabase();
-  return db.prepare('SELECT * FROM bilibili_streamers WHERE user_id = ? ORDER BY created_at DESC').all(userId) as BilibiliStreamer[];
+  const user = db.prepare('SELECT id FROM users WHERE telegram_id = ?').get(telegramId) as { id: number } | undefined;
+  if (!user) return [];
+
+  return db.prepare('SELECT * FROM bilibili_streamers WHERE user_id = ? ORDER BY created_at DESC').all(user.id) as BilibiliStreamer[];
 }
 
 /**
@@ -178,9 +184,12 @@ export function addYoutubeChannel(
 /**
  * 移除 YouTube 订阅
  */
-export function removeYoutubeChannel(userId: number, channelId: string): boolean {
+export function removeYoutubeChannel(telegramId: number, channelId: string): boolean {
   const db = getDatabase();
-  const result = db.prepare('DELETE FROM youtube_channels WHERE user_id = ? AND channel_id = ?').run(userId, channelId);
+  const user = db.prepare('SELECT id FROM users WHERE telegram_id = ?').get(telegramId) as { id: number } | undefined;
+  if (!user) return false;
+
+  const result = db.prepare('DELETE FROM youtube_channels WHERE user_id = ? AND channel_id = ?').run(user.id, channelId);
   return result.changes > 0;
 }
 
@@ -240,9 +249,12 @@ export function addTwitterUser(
 /**
  * 移除 Twitter 订阅
  */
-export function removeTwitterUser(userId: number, username: string): boolean {
+export function removeTwitterUser(telegramId: number, username: string): boolean {
   const db = getDatabase();
-  const result = db.prepare('DELETE FROM twitter_users WHERE user_id = ? AND username = ?').run(userId, username);
+  const user = db.prepare('SELECT id FROM users WHERE telegram_id = ?').get(telegramId) as { id: number } | undefined;
+  if (!user) return false;
+
+  const result = db.prepare('DELETE FROM twitter_users WHERE user_id = ? AND username = ?').run(user.id, username);
   return result.changes > 0;
 }
 
@@ -290,12 +302,17 @@ export function getAllRssFeeds(): (RssFeed & { telegram_id: number })[] {
 /**
  * 添加 RSS 订阅
  */
-export function addRssFeed(userId: number, url: string, name?: string): RssFeed {
+export function addRssFeed(telegramId: number, url: string, name?: string): RssFeed {
   const db = getDatabase();
+  const user = db.prepare('SELECT id FROM users WHERE telegram_id = ?').get(telegramId) as { id: number } | undefined;
+  if (!user) {
+    throw new Error('用户不存在，请先发送 /start 初始化');
+  }
+
   const result = db.prepare(`
         INSERT INTO rss_feeds (user_id, url, name)
         VALUES (?, ?, ?)
-    `).run(userId, url, name || null);
+    `).run(user.id, url, name || null);
 
   return db.prepare('SELECT * FROM rss_feeds WHERE id = ?').get(result.lastInsertRowid) as RssFeed;
 }
@@ -303,11 +320,14 @@ export function addRssFeed(userId: number, url: string, name?: string): RssFeed 
 /**
  * 移除 RSS 订阅
  */
-export function removeRssFeed(userId: number, url: string): boolean {
+export function removeRssFeed(telegramId: number, url: string): boolean {
   const db = getDatabase();
+  const user = db.prepare('SELECT id FROM users WHERE telegram_id = ?').get(telegramId) as { id: number } | undefined;
+  if (!user) return false;
+
   const result = db.prepare(`
         DELETE FROM rss_feeds WHERE user_id = ? AND url = ?
-    `).run(userId, url);
+    `).run(user.id, url);
   return result.changes > 0;
 }
 
@@ -338,12 +358,17 @@ export function getAllGithubRepos(): (GithubRepo & { telegram_id: number })[] {
 /**
  * 添加 GitHub 订阅
  */
-export function addGithubRepo(userId: number, repo: string, name?: string): GithubRepo {
+export function addGithubRepo(telegramId: number, repo: string, name?: string): GithubRepo {
   const db = getDatabase();
+  const user = db.prepare('SELECT id FROM users WHERE telegram_id = ?').get(telegramId) as { id: number } | undefined;
+  if (!user) {
+    throw new Error('用户不存在，请先发送 /start 初始化');
+  }
+
   const result = db.prepare(`
         INSERT INTO github_repos (user_id, repo, name)
         VALUES (?, ?, ?)
-    `).run(userId, repo, name || null);
+    `).run(user.id, repo, name || null);
 
   return db.prepare('SELECT * FROM github_repos WHERE id = ?').get(result.lastInsertRowid) as GithubRepo;
 }
@@ -351,11 +376,14 @@ export function addGithubRepo(userId: number, repo: string, name?: string): Gith
 /**
  * 移除 GitHub 订阅
  */
-export function removeGithubRepo(userId: number, repo: string): boolean {
+export function removeGithubRepo(telegramId: number, repo: string): boolean {
   const db = getDatabase();
+  const user = db.prepare('SELECT id FROM users WHERE telegram_id = ?').get(telegramId) as { id: number } | undefined;
+  if (!user) return false;
+
   const result = db.prepare(`
         DELETE FROM github_repos WHERE user_id = ? AND repo = ?
-    `).run(userId, repo);
+    `).run(user.id, repo);
   return result.changes > 0;
 }
 
