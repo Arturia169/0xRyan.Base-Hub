@@ -16,10 +16,9 @@ import { FlipClock } from './components/FlipClock';
 // 已移除过时模拟数据
 
 const DOCKER_CONTAINERS = [
-  { name: 'wallet-monitor', status: 'running' },
-  { name: 'cloudflared', status: 'running' },
-  { name: 'postgres', status: 'running' },
-  { name: 'redis', status: 'stopped' },
+  { name: 'intelligence-core', status: 'running' },
+  { name: 'cyber-tunnel', status: 'running' },
+  { name: 'watchtower', status: 'running' },
 ];
 
 const GITHUB_ACTIVITY = Array.from({ length: 28 }, () => Math.floor(Math.random() * 5));

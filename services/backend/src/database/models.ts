@@ -2,7 +2,6 @@
  * 数据模型类型定义
  */
 
-import type { ChainType } from '../config/index.js';
 
 /**
  * 用户模型
