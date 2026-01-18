@@ -9,13 +9,11 @@ import { setBotInstance } from '../services/notification.js';
 
 // 导入命令处理器
 import startCommand from './commands/start.js';
-import { addBili, removeBili, listBili } from './commands/bilibili.js';
-import { addYoutube, removeYoutube, listYoutube } from './commands/youtube.js';
-import { addTwitter, removeTwitter, listTwitter } from './commands/twitter.js';
+import { addBili, removeBili } from './commands/bilibili.js';
+import { addYoutube, removeYoutube } from './commands/youtube.js';
+import { addTwitter, removeTwitter } from './commands/twitter.js';
+import { listAll } from './commands/list.js';
 import { bilibiliService } from '../services/bilibili.js';
-
-// 导入键盘
-import { mainMenuKeyboard } from './keyboards.js';
 import { HttpsProxyAgent } from 'https-proxy-agent';
 
 const log = logger.child('Bot');
@@ -89,49 +87,17 @@ export function createBot(): Bot {
     // Bilibili 命令
     bot.command('addbili', addBili);
     bot.command('removebili', removeBili);
-    bot.command('listbili', listBili);
 
     // YouTube 命令
     bot.command('addyt', addYoutube);
     bot.command('removeyt', removeYoutube);
-    bot.command('listyt', listYoutube);
 
     // Twitter 命令
     bot.command('addtw', addTwitter);
     bot.command('removetw', removeTwitter);
-    bot.command('listtw', listTwitter);
 
-    // 处理主菜单回调
-    bot.callbackQuery('menu:main', async (ctx: Context) => {
-        await ctx.editMessageText(
-            '🤖 <b>赛博基地情报中心</b>\n\n请选择操作：',
-            {
-                parse_mode: 'HTML',
-                reply_markup: mainMenuKeyboard(),
-            }
-        );
-        await ctx.answerCallbackQuery();
-    });
-
-    bot.callbackQuery('menu:add', async (ctx: Context) => {
-        await ctx.reply('请使用 /addbili 命令添加 B站 监控');
-        await ctx.answerCallbackQuery();
-    });
-
-    bot.callbackQuery('menu:list', async (ctx: Context) => {
-        await ctx.answerCallbackQuery();
-        await ctx.reply('请使用 /listbili 命令查看监控列表');
-    });
-
-    bot.callbackQuery('menu:balance', async (ctx: Context) => {
-        await ctx.reply('情报中心模式下不提供余额查询');
-        await ctx.answerCallbackQuery();
-    });
-
-    // 处理 noop 回调（无操作）
-    bot.callbackQuery('noop', async (ctx: Context) => {
-        await ctx.answerCallbackQuery();
-    });
+    // 统一的订阅列表命令
+    bot.command('list', listAll);
 
     // 错误处理
     bot.catch((err: any) => {
@@ -161,41 +127,12 @@ export async function startBot(): Promise<void> {
     // 设置命令列表
     await bot!.api.setMyCommands([
         { command: 'start', description: '开始使用 / 主菜单' },
+        { command: 'list', description: '查看所有订阅' },
         { command: 'addbili', description: '添加B站直播监控' },
-        { command: 'listbili', description: '查看B站监控列表' },
         { command: 'addyt', description: '添加YouTube频道监控' },
-        { command: 'listyt', description: '查看YouTube监控列表' },
         { command: 'addtw', description: '添加Twitter用户监控' },
-        { command: 'listtw', description: '查看Twitter监控列表' },
         { command: 'help', description: '帮助信息' },
     ]);
-
-    // 设置菜单按钮为 Web App
-    if (config.telegram.webappUrl) {
-        if (config.telegram.webappUrl.startsWith('https://')) {
-            try {
-                await bot!.api.setChatMenuButton({
-                    menu_button: {
-                        type: 'web_app',
-                        text: '💎 控制面板',
-                        web_app: { url: config.telegram.webappUrl },
-                    },
-                });
-                log.info('Bot 菜单按钮已设置为 Web App');
-            } catch (error) {
-                log.error('设置菜单按钮失败:', error);
-            }
-        } else {
-            log.warn('⚠️ WEBAPP_URL 不是 HTTPS 地址，无法设置为菜单按钮。');
-            try {
-                await bot!.api.setChatMenuButton({
-                    menu_button: { type: 'default' },
-                });
-            } catch (e) {
-                log.error('重置菜单按钮失败:', e);
-            }
-        }
-    }
 
     // 启动 Bilibili 监控服务
     bilibiliService.start();

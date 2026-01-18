@@ -1,27 +1,5 @@
 services:
-  # 1. 聚合网关 - 内部流量中心
-  gateway:
-    image: nginx:alpine
-    container_name: cyber-gateway
-    # 移除宿主机端口 80 冲突，流量将由 Cloudflare Tunnel 内部转发
-    volumes:
-      - ./gateway/nginx.conf:/etc/nginx/nginx.conf:ro
-    depends_on:
-      - frontend
-      - backend
-    networks:
-      - cyber-backbone
-    restart: unless-stopped
-
-  # 2. 前端看板
-  frontend:
-    image: ghcr.io/arturia169/cyber-home-v2:latest
-    container_name: cyber-frontend
-    networks:
-      - cyber-backbone
-    restart: unless-stopped
-
-  # 3. 情报大脑
+  # 情报大脑 - Bot + API + 监控服务
   backend:
     image: ghcr.io/arturia169/cyber-core-v2:latest
     container_name: cyber-backend
@@ -38,26 +16,18 @@ services:
       - HTTP_PROXY=http://127.0.0.1:7890
     restart: unless-stopped
 
-  # 4. Cloudflare Tunnel - 提供外部 HTTPS 访问
+  # Cloudflare Tunnel - 提供外部 HTTPS 访问（可选）
   cloudflare-tunnel:
     image: cloudflare/cloudflared:latest
     container_name: cyber-tunnel
     restart: unless-stopped
-    # 移除 host 模式，将其加入内网桥接网络，以便能解析 'gateway' 域名
-    networks:
-      - cyber-backbone
+    network_mode: host
     dns:
       - 8.8.8.8
       - 1.1.1.1
     environment:
       - TUNNEL_TOKEN=${CF_TUNNEL_TOKEN}
-      - TUNNEL_HTTP_PROXY=http://192.168.5.100:7890
-      - HTTPS_PROXY=http://192.168.5.100:7890
-      - NO_PROXY=gateway,cyber-gateway,frontend,backend,localhost,127.0.0.1
-      - no_proxy=gateway,cyber-gateway,frontend,backend,localhost,127.0.0.1
+      - TUNNEL_HTTP_PROXY=http://127.0.0.1:7890
+      - HTTPS_PROXY=http://127.0.0.1:7890
       - TUNNEL_TRANSPORT_PROTOCOL=http2
     command: tunnel --no-autoupdate run --protocol http2
-
-networks:
-  cyber-backbone:
-    driver: bridge
