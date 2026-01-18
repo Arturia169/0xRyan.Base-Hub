@@ -5,8 +5,10 @@
 
 import { SourcePlugin, Subscription } from './types.js';
 import { logger } from '../utils/logger.js';
-import { bot } from '../bot/index.js';
+import { sendMessage, sendPhoto } from '../services/notification.js';
 import { getDatabase } from '../database/index.js';
+
+import { setTimeout, setInterval, clearInterval } from 'node:timers';
 
 export abstract class BasePlugin implements SourcePlugin {
     abstract name: string;
@@ -58,14 +60,13 @@ export abstract class BasePlugin implements SourcePlugin {
     protected async notify(userId: number, message: string, photoUrl?: string) {
         try {
             if (photoUrl) {
-                await bot.api.sendPhoto(userId, photoUrl, {
+                await sendPhoto(userId, photoUrl, {
                     caption: message,
                     parse_mode: 'HTML'
                 });
             } else {
-                await bot.api.sendMessage(userId, message, {
-                    parse_mode: 'HTML',
-                    link_preview_options: { is_disabled: false }
+                await sendMessage(userId, message, {
+                    parse_mode: 'HTML'
                 });
             }
             this.log.info(`发送通知给用户 ${userId}`);
