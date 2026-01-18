@@ -47,7 +47,7 @@ function App() {
     const fetchData = async () => {
       const API_BASE = getApiBase();
       try {
-        // 后端数据 (包含资产 + 系统监控)
+        // 后端数据 (情报 + 系统监控)
         const res = await fetch(`${API_BASE}/api/home-dashboard`, {
           headers: { 'x-api-key': API_KEY }
         });
