@@ -4,6 +4,7 @@
  */
 
 import axios from 'axios';
+import { setInterval, clearInterval, setTimeout } from 'node:timers';
 import { logger } from '../utils/logger.js';
 import { sendMessage, sendPhoto } from './notification.js';
 import {
@@ -33,7 +34,7 @@ interface BilibiliLiveInfo {
 }
 
 export class BilibiliService {
-    private timer: NodeJS.Timeout | null = null;
+    private timer: any = null;
     private isRunning = false;
 
     /**

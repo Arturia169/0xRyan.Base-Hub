@@ -2,7 +2,8 @@
  * Telegram Mini App 验证工具
  */
 
-import crypto from 'crypto';
+import crypto from 'node:crypto';
+import { URL } from 'node:url';
 import { config } from '../config/index.js';
 
 /**

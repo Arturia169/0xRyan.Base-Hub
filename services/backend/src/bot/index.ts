@@ -177,7 +177,7 @@ export async function startBot(): Promise<void> {
 
     // 启动长轮询
     bot!.start({
-        onStart: (botInfo: any) => {
+        onStart: (botInfo) => {
             log.info(`Bot 已启动: @${botInfo.username}`);
         },
     });
