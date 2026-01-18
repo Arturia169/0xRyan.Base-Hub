@@ -45,12 +45,24 @@ export async function addYoutube(ctx: Context) {
 
                 const response = await axios.get(url, {
                     headers: {
-                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-                    }
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+                    },
+                    timeout: 10000
                 });
 
-                // 从页面源代码中提取 channelId
-                const match = response.data.match(/"channelId":"(UC[^"]+)"/);
+                // 尝试多种匹配模式
+                let match = response.data.match(/"channelId":"(UC[^"]+)"/);
+                if (!match) {
+                    match = response.data.match(/"externalId":"(UC[^"]+)"/);
+                }
+                if (!match) {
+                    match = response.data.match(/channel\/(UC[a-zA-Z0-9_-]{22})/);
+                }
+                if (!match) {
+                    // 尝试从 meta 标签提取
+                    match = response.data.match(/<meta itemprop="channelId" content="(UC[^"]+)">/);
+                }
+
                 if (match && match[1]) {
                     channelId = match[1];
                     // 如果没有自定义名称，尝试提取频道标题
@@ -62,10 +74,18 @@ export async function addYoutube(ctx: Context) {
                     }
                     await ctx.reply(`✅ 已找到频道 ID: <code>${channelId}</code>`, { parse_mode: 'HTML' });
                 } else {
-                    throw new Error('无法从页面中提取频道 ID，请确认用户名是否正确');
+                    // 记录部分响应内容用于调试
+                    log.warn(`无法提取频道 ID，Handle: ${handle}, 响应长度: ${response.data.length}`);
+                    throw new Error('无法从页面中提取频道 ID。\n\n💡 提示：请尝试直接使用频道 ID，或检查用户名拼写是否正确');
                 }
             } catch (error: any) {
-                await ctx.reply(`❌ Handle 转换失败: ${error.message}\n\n💡 提示：您也可以直接使用频道 ID (UCxxxxxx 格式)`);
+                if (error.code === 'ECONNABORTED') {
+                    await ctx.reply(`❌ 连接超时，请检查网络或代理设置`);
+                } else if (error.response?.status === 404) {
+                    await ctx.reply(`❌ 频道不存在，请检查用户名是否正确：${channelInput}`);
+                } else {
+                    await ctx.reply(`❌ Handle 转换失败: ${error.message}\n\n💡 提示：您也可以直接使用频道 ID (UCxxxxxx 格式)`);
+                }
                 return;
             }
         }
