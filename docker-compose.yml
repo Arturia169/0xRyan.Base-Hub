@@ -39,6 +39,16 @@ services:
       - cyber-backbone
     restart: unless-stopped
 
+  # 4. Cloudflare Tunnel - 提供外部 HTTPS 访问
+  cloudflare-tunnel:
+    image: cloudflare/cloudflared:latest
+    container_name: cyber-tunnel
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      - TUNNEL_TOKEN=${CF_TUNNEL_TOKEN}
+    command: tunnel --no-autoupdate run --protocol http2
+
 networks:
   cyber-backbone:
     driver: bridge
