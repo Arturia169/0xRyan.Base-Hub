@@ -5,7 +5,7 @@
 
 import { Composer } from 'grammy';
 import { mainMenuKeyboard } from '../keyboards.js';
-import { getOrCreateUser, getUserStats } from '../../database/queries.js';
+import { getOrCreateUser } from '../../database/queries.js';
 
 const composer = new Composer();
 
@@ -17,26 +17,22 @@ composer.command('start', async (ctx) => {
   getOrCreateUser(user.id, user.username, user.first_name);
 
   const welcomeMessage = `
-🤖 <b>欢迎使用虚拟钱包监控机器人！</b>
+🤖 <b>欢迎来到赛博基地情报中心！</b>
 
-我可以帮助你实时监控区块链钱包的资产变化。
+我是你的情报助手，负责实时监控并汇总来自 B站、YouTube 及社媒的关键动态。
 
-<b>📋 支持的功能：</b>
-• 🔵 <b>Arbitrum One</b> - ETH、USDC、USDT、ARB
-• 🔴 <b>Tron</b> - TRX、USDC、USDT
+<b>📺 当前支持：</b>
+• <b>Bilibili</b> - 主播开播提醒 / 动态同步
+• <b>GitHub</b> - 活动热力图展示 (Mini App)
+• <b>系统监控</b> - 实时 Docker 容器健康状态
 
-<b>🛠️ 可用命令：</b>
-/add - 添加监控钱包
-/list - 查看所有钱包并管理（支持重命名）
-/summary - <b>全链资产快照汇总</b>
-/stats - 资产分布统计
-/balance - 查询实时余额
-/price - 查询代币价格
-/alert - 设置余额告警
-/help - 帮助信息
+<b>🛠️ 常用命令：</b>
+/addbili - 添加 B站 监控房间
+/listbili - 查看我的监控列表
+/removebili - 移除监控房间
+/help - 详尽说明
 
-<b>💡 快速开始：</b>
-点击下方按钮开始使用，或直接发送 /add 添加第一个钱包
+点击下方按钮进入<b>控制面板</b>查看实时看板。
   `;
 
   await ctx.reply(welcomeMessage, {
@@ -49,40 +45,18 @@ composer.command('help', async (ctx) => {
   const helpMessage = `
 📖 <b>使用帮助</b>
 
-<b>📦 钱包管理：</b>
-/add &lt;链&gt; &lt;地址&gt; [标签]
-  添加新钱包到监控列表
-  链: arb（Arbitrum）或 tron
-  例: /add arb 0x1234... 我的钱包
+<b>📺 B站 监控管理：</b>
+/addbili &lt;房间号&gt;
+  例: /addbili 22637261
+  
+/listbili
+  查看所有正在监控的主播状态
+  
+/removebili &lt;房间号&gt;
+  取消对指定房间的监控
 
-/list
-  查看所有监控中的钱包（可管理、重命名）
-
-/summary
-  查看全链资产估值汇总（强烈推荐）
-
-/stats
-  查看资产分布饼图统计（估算值）
-
-/remove &lt;地址&gt;
-  从监控列表移除钱包
-
-<b>💰 余额查询：</b>
-/balance [地址]
-  查询钱包余额（不指定地址则查询所有）
-
-/price [代币]
-  查询代币价格
-  例: /price eth
-
-<b>⚠️ 告警设置：</b>
-/alert &lt;地址&gt; &lt;代币&gt; &lt;阈值&gt;
-  设置余额告警
-  例: /alert 0x1234... ETH 0.1
-
-<b>📊 统计功能：</b>
-/stats
-  查看资产统计汇总
+<b>💎 赛博控制面板：</b>
+点击 [💎 赛博控制面板] 按钮即可在 Telegram 内直接打开 Web App 看板。
 
 <b>❓ 其他：</b>
 /start - 回到主菜单
