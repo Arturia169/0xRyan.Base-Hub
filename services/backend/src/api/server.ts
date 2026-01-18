@@ -46,7 +46,7 @@ export async function startServer() {
         // 3. 路由
 
         // 检查服务状态
-        app.get('/health', async () => {
+        app.get('/api/health', async () => {
             return { status: 'ok', version: '1.0.0' };
         });
 
