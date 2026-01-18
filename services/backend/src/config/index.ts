@@ -4,6 +4,7 @@
  */
 
 import 'dotenv/config';
+import process from 'node:process';
 
 /**
  * 支持的区块链网络
@@ -274,8 +275,7 @@ export function validateConfig(): void {
     }
 
     if (!config.tronApiKey) {
-        errors.push('缺少 TRON_API_KEY 环境变量（Tron 链功能将受限）');
-        // 这不是致命错误，只是警告
+        // 这不是致命错误，仅打印警告
         console.warn('⚠️ 警告: 缺少 TRON_API_KEY，Tron 链监控功能可能受限');
     }
 
