@@ -5,11 +5,17 @@
 import { SourcePlugin } from './types.js';
 import { logger } from '../utils/logger.js';
 import { Context } from 'grammy';
+import { BilibiliPlugin } from '../plugins/bilibili/index.js';
 
 const log = logger.child('Core:PluginManager');
 
 export class PluginManager {
     private plugins: Map<string, SourcePlugin> = new Map();
+
+    constructor() {
+        // 在这里注册所有内置插件
+        this.register(new BilibiliPlugin());
+    }
 
     // 注册插件
     register(plugin: SourcePlugin) {

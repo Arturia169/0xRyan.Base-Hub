@@ -2,22 +2,33 @@
  * 统一的订阅列表命令
  */
 
-import { Context } from 'grammy';
+
 import {
-    getAllBilibiliStreamers,
     getAllYoutubeChannels,
     getAllTwitterUsers
 } from '../../database/queries.js';
+import { pluginManager } from '../../core/PluginManager.js';
+import { Subscription } from '../../core/types.js';
 
 export async function listAll(ctx: Context) {
     const userId = ctx.from!.id;
 
     // 获取所有订阅
-    const biliStreamers = getAllBilibiliStreamers().filter(s => s.telegram_id === userId);
+    let biliSubs: Subscription[] = [];
+    try {
+        const biliPlugin = pluginManager.get('bilibili');
+        if (biliPlugin) {
+            biliSubs = await biliPlugin.getSubscriptions(userId);
+        }
+    } catch (e) {
+        console.error('获取B站订阅失败', e);
+    }
+
+    // 暂时还未迁移 YouTube 和 Twitter，沿用旧查询
     const ytChannels = getAllYoutubeChannels().filter(c => c.telegram_id === userId);
     const twUsers = getAllTwitterUsers().filter(u => u.telegram_id === userId);
 
-    if (biliStreamers.length === 0 && ytChannels.length === 0 && twUsers.length === 0) {
+    if (biliSubs.length === 0 && ytChannels.length === 0 && twUsers.length === 0) {
         await ctx.reply('📭 你还没有任何订阅\n\n使用以下命令添加订阅：\n/addbili - B站直播\n/addyt - YouTube频道\n/addtw - Twitter用户');
         return;
     }
@@ -25,12 +36,13 @@ export async function listAll(ctx: Context) {
     let message = '📋 <b>我的订阅列表</b>\n\n';
 
     // Bilibili
-    if (biliStreamers.length > 0) {
-        message += '📺 <b>Bilibili 直播 (' + biliStreamers.length + ')</b>\n';
-        biliStreamers.forEach((s, index) => {
-            const status = s.is_live ? '🔴 直播中' : '⚫ 未开播';
-            message += `${index + 1}. ${s.name || s.room_id} ${status}\n`;
-            message += `   房间号: <code>${s.room_id}</code>\n`;
+    if (biliSubs.length > 0) {
+        message += '📺 <b>Bilibili 直播 (' + biliSubs.length + ')</b>\n';
+        biliSubs.forEach((s, index) => {
+            const isLive = s.extra?.isLive;
+            const status = isLive ? '🔴 直播中' : '⚫ 未开播';
+            message += `${index + 1}. ${s.name || s.targetId} ${status}\n`;
+            message += `   房间号: <code>${s.targetId}</code>\n`;
         });
         message += '\n';
     }

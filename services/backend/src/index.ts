@@ -6,6 +6,7 @@ import { startServer, stopServer } from './api/server.js';
 import { youtubeService } from './services/youtube.js';
 import { twitterService } from './services/twitter.js';
 import { logger } from './utils/logger.js';
+import { pluginManager } from './core/PluginManager.js';
 
 const log = logger.child('Main');
 
@@ -39,8 +40,14 @@ async function main() {
         await startServer();
         log.info('   ✅ API 服务器启动成功');
 
-        // 启动情报监控服务
-        log.info('5. 启动情报监控...');
+        // 初始化并启动插件
+        log.info('5. 加载插件系统...');
+        await pluginManager.initAll();
+        pluginManager.startAll();
+        log.info('   ✅ 插件系统已就绪');
+
+        // 启动旧版监控服务 (逐步迁移中)
+        log.info('6. 启动旧版监控 (YouTube, Twitter)...');
         youtubeService.start();
         twitterService.start();
         log.info('   ✅ 监控服务已运行 (YouTube, Twitter)');
@@ -63,6 +70,7 @@ async function shutdown() {
 
     try {
         // 停止监控服务
+        pluginManager.stopAll();
         youtubeService.stop();
         twitterService.stop();
 

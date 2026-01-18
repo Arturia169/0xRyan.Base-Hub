@@ -13,7 +13,6 @@ import { addBili, removeBili } from './commands/bilibili.js';
 import { addYoutube, removeYoutube } from './commands/youtube.js';
 import { addTwitter, removeTwitter } from './commands/twitter.js';
 import { listAll } from './commands/list.js';
-import { bilibiliService } from '../services/bilibili.js';
 import { HttpsProxyAgent } from 'https-proxy-agent';
 
 const log = logger.child('Bot');
@@ -134,8 +133,7 @@ export async function startBot(): Promise<void> {
         { command: 'help', description: '帮助信息' },
     ]);
 
-    // 启动 Bilibili 监控服务
-    bilibiliService.start();
+
 
     // 强制重置菜单按钮为默认（移除残留的控制面板按钮）
     try {
@@ -163,7 +161,6 @@ export async function startBot(): Promise<void> {
 export async function stopBot(): Promise<void> {
     if (bot) {
         await bot.stop();
-        bilibiliService.stop();
         log.info('Bot 已停止');
     }
 }
