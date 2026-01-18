@@ -137,6 +137,16 @@ export async function startBot(): Promise<void> {
     // 启动 Bilibili 监控服务
     bilibiliService.start();
 
+    // 强制重置菜单按钮为默认（移除残留的控制面板按钮）
+    try {
+        await bot!.api.setChatMenuButton({
+            menu_button: { type: 'default' },
+        });
+        log.info('菜单按钮已重置为默认');
+    } catch (error) {
+        log.error('重置菜单按钮失败:', error);
+    }
+
     log.info('Bot 命令已注册');
 
     // 启动长轮询
