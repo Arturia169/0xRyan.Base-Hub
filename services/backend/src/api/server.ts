@@ -8,6 +8,7 @@ import fastifyStatic from '@fastify/static';
 import fastifyCors from '@fastify/cors';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import process from 'node:process';
 import { logger } from '../utils/logger.js';
 import { validateInitData } from './auth.js';
 import { getUserDashboardData } from '../services/dashboard.js';
@@ -33,13 +34,14 @@ export async function startServer() {
             origin: true
         });
 
-        // 2. 静态文件服务 (指向前端构建目录)
-        // 注意：构建后的文件在 services/frontend/dist (映射到容器内的相对位置)
+        // 2. 静态文件服务 - 在生产环境下由 Nginx 处理
+        /*
         const publicPath = path.join(__dirname, '../../frontend/dist');
         await app.register(fastifyStatic, {
             root: publicPath,
             prefix: '/',
         });
+        */
 
         // 3. 路由
 

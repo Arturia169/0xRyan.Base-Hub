@@ -15,9 +15,7 @@
         "skipLibCheck": true,
         "forceConsistentCasingInFileNames": true,
         "resolveJsonModule": true,
-        "types": [
-            "node"
-        ],
+        "types": [],
         "declaration": true,
         "declarationMap": true,
         "sourceMap": true
@@ -27,6 +25,7 @@
     ],
     "exclude": [
         "node_modules",
-        "dist"
+        "dist",
+        "dashboard"
     ]
 }
