@@ -5,9 +5,9 @@
 
 import Database from 'better-sqlite3';
 import { logger } from '../utils/logger.js';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import fs from 'fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import fs from 'node:fs';
 
 // 获取当前文件目录
 const __dirname = path.dirname(fileURLToPath(import.meta.url));

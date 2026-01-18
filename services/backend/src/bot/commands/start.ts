@@ -3,13 +3,13 @@
  * 显示欢迎消息和功能介绍
  */
 
-import { Composer } from 'grammy';
+import { Composer, Context } from 'grammy';
 import { mainMenuKeyboard } from '../keyboards.js';
 import { getOrCreateUser } from '../../database/queries.js';
 
 const composer = new Composer();
 
-composer.command('start', async (ctx) => {
+composer.command('start', async (ctx: Context) => {
   const user = ctx.from;
   if (!user) return;
 
@@ -41,7 +41,7 @@ composer.command('start', async (ctx) => {
   });
 });
 
-composer.command('help', async (ctx) => {
+composer.command('help', async (ctx: Context) => {
   const helpMessage = `
 📖 <b>使用帮助</b>
 
