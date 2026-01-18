@@ -14,6 +14,7 @@ import { bilibiliService } from '../services/bilibili.js';
 
 // 导入键盘
 import { mainMenuKeyboard } from './keyboards.js';
+import { HttpsProxyAgent } from 'https-proxy-agent';
 
 const log = logger.child('Bot');
 
@@ -40,7 +41,18 @@ export function createBot(): Bot {
         throw new Error('未配置 TELEGRAM_BOT_TOKEN');
     }
 
-    bot = new Bot(config.telegram.botToken);
+    // 配置代理
+    const botConfig: any = {};
+    if (config.proxyUrl) {
+        log.info(`使用代理启动 Bot: ${config.proxyUrl}`);
+        botConfig.client = {
+            baseFetchConfig: {
+                agent: new HttpsProxyAgent(config.proxyUrl),
+            },
+        };
+    }
+
+    bot = new Bot(config.telegram.botToken, botConfig);
 
     // 设置 Bot 实例到通知服务
     setBotInstance(bot);

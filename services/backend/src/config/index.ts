@@ -262,6 +262,9 @@ export const config = {
 
     // 链配置
     chains: chainConfigs,
+
+    // 代理配置
+    proxyUrl: process.env.HTTPS_PROXY || process.env.HTTP_PROXY || '',
 };
 
 /**
