@@ -170,8 +170,7 @@ ${tweet.title}
 
             for (const sub of subscribers) {
                 await sendMessage(sub.telegram_id, message, {
-                    parse_mode: 'HTML',
-                    disable_web_page_preview: false // 允许推特预览图
+                    parse_mode: 'HTML'
                 });
             }
 
