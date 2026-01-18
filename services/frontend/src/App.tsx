@@ -116,8 +116,7 @@ function App() {
     }
   };
 
-  // 数据映射
-  const intelligence = dashboardData?.intelligence || [];
+  // API 加载后自动映射情报流
 
   return (
     <div className="main-container">
